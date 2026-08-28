@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>La Caja de Experiencias</title>
+<style>
+  :root { --bg:#f5f3ef; --card:#fff; --text:#222; --muted:#777; --accent:#6c4ab6; --accent2:#e9defb; }
+  * { box-sizing:border-box; }
+  body { margin:0; font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif; background:var(--bg); color:var(--text); }
+  .wrap { max-width:760px; margin:auto; padding:24px 16px 40px; }
+  h1 { margin:0 0 6px; font-size:clamp(28px,6vw,44px); }
+  .sub { color:var(--muted); margin:0 0 22px; }
+  .panel { background:var(--card); border-radius:22px; padding:22px; box-shadow:0 8px 30px #0000000d; margin-bottom:16px; }
+  .stats { display:flex; gap:10px; flex-wrap:wrap; }
+  .stat { flex:1; min-width:130px; background:#f7f6f8; border-radius:16px; padding:13px; }
+  .num { font-size:25px; font-weight:800; }
+  .label { color:var(--muted); font-size:13px; }
+  button { border:0; border-radius:14px; padding:13px 18px; font-weight:700; cursor:pointer; font-size:15px; }
+  .primary { background:var(--accent); color:white; width:100%; font-size:18px; padding:16px; }
+  .secondary { background:var(--accent2); color:var(--accent); }
+  .danger { background:#fbe5e5; color:#a33; }
+  .choices { display:grid; gap:12px; margin:18px 0; }
+  .choice { border:2px solid #eee; border-radius:18px; padding:18px; background:white; }
+  .choice.selected { border-color:var(--accent); background:#faf7ff; }
+  .cat { color:var(--accent); font-size:12px; font-weight:800; text-transform:uppercase; letter-spacing:.06em; }
+  .activity { font-size:20px; font-weight:800; margin:6px 0 10px; }
+  .hint { color:var(--muted); font-size:13px; }
+  .actions { display:flex; gap:8px; flex-wrap:wrap; }
+  .actions button { flex:1; min-width:150px; }
+  .done-list { max-height:320px; overflow:auto; }
+  .done-item { display:flex; justify-content:space-between; gap:10px; padding:10px 0; border-bottom:1px solid #eee; font-size:14px; }
+  .empty { color:var(--muted); text-align:center; padding:12px; }
+  .tiny { font-size:12px; color:var(--muted); margin-top:10px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>🎲 La Caja de Experiencias</h1>
+  <p class="sub">Tres opciones al azar. Elige una y las otras vuelven a la caja.</p>
+
+  <div class="panel">
+    <div class="stats">
+      <div class="stat"><div class="num" id="available">0</div><div class="label">Disponibles</div></div>
+      <div class="stat"><div class="num" id="done">0</div><div class="label">Realizadas</div></div>
+      <div class="stat"><div class="num" id="total">0</div><div class="label">Total</div></div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <button class="primary" id="drawBtn">🎰 Sacar 3 actividades</button>
+    <div id="choices" class="choices"></div>
+    <div class="actions" id="actions" style="display:none">
+      <button class="secondary" id="redrawBtn">🔄 Sacar otras 3</button>
+      <button class="primary" id="keepBtn">✅ Me quedo con esta</button>
+    </div>
+    <div class="tiny">Las actividades realizadas quedan guardadas en este navegador.</div>
+  </div>
+
+  <div class="panel">
+    <h2>✅ Actividades realizadas</h2>
+    <div id="doneList" class="done-list"></div>
+    <button class="secondary" id="allBtn" style="margin-top:14px;width:100%">📋 Ver las 320 actividades</button><button class="danger" id="resetBtn" style="margin-top:8px;width:100%">♻️ Reiniciar todas</button><div id="allList" class="done-list" style="display:none;margin-top:14px"></div>
+  </div>
+</div>
+
+<script>
+const activities = ["Clase de salsa", "Clase de bachata", "Clase de merengue", "Clase de danza urbana", "Clase de tango", "Clase de cocina", "Taller de sushi", "Taller de pasta italiana", "Taller de repostería", "Clase de coctelería", "Taller de cerámica", "Clase de pintura", "Clase de fotografía", "Taller de velas", "Taller de perfumes", "Clase de dibujo", "Clase de actuación", "Taller de improvisación", "Clase de canto", "Aprender un juego de mesa nuevo", "Taller de joyería artesanal", "Crear un anillo o pulsera desde cero", "Taller de mosaicos", "Taller de vitral", "Aprender origami", "Taller de encuadernación artesanal", "Crear un cuaderno personalizado", "Taller de serigrafía", "Pintar cerámica", "Decorar una taza", "Crear una camiseta personalizada", "Taller de bordado", "Taller de tejido", "Aprender macramé", "Taller de escultura", "Crear un collage artístico", "Pintarse retratos mutuamente", "Clase de caligrafía", "Taller de fotografía nocturna", "Taller de café y métodos de preparación", "Cata de cafés de diferentes regiones", "Taller de chocolate", "Crear chocolates personalizados", "Cata de quesos", "Cata de té", "Taller de kombucha", "Taller de pan artesanal", "Aprender a preparar ramen", "Preparar dumplings", "Competencia de decoración de cupcakes", "Preparar una cena de un país elegido al azar", "Noche de cocina con ingredientes sorpresa", "Concurso de preparar el mejor postre", "Noche de detectives", "Resolver un asesinato ficticio", "Murder mystery dinner", "Escape room de terror", "Escape room portátil en casa", "Noche de juegos de rol", "Probar Dungeons & Dragons", "Noche de juegos de cartas modernos", "Ir a una noche de trivia temática", "Concurso de preguntas sobre películas", "Concurso de canciones de los 2000", "Noche de ¿Quién conoce mejor al otro?", "Hacer un quiz de personalidad entre todos", "Crear un juego de mesa propio", "Clase de improvisación", "Taller de clown", "Clase de expresión corporal", "Karaoke temático", "Noche de imitaciones", "Concurso de contar historias", "Ir a un show de stand-up", "Ir a una obra interactiva", "Participar como público en una grabación o podcast en vivo", "Hacer un tour histórico nocturno", "Hacer un tour de fantasmas o leyendas", "Recorrer La Candelaria con un guía", "Hacer una ruta de grafitis", "Hacer una ruta fotográfica", "Visitar un museo completamente al azar", "Entrar a una exposición sin investigar de qué se trata", "Visitar un edificio histórico abierto al público", "Hacer una ruta de arquitectura", "Visitar un mercado tradicional", "Hacer una ruta de librerías", "Hacer una ruta de tiendas curiosas", "Buscar el café más extraño de la ciudad", "Buscar el restaurante más pequeño que encuentren", "Hacer una ruta de lugares con historias extrañas", "Caminata ecológica", "Avistamiento de aves", "Fotografía de naturaleza", "Visitar un jardín botánico", "Hacer un picnic al atardecer", "Caminata de madrugada", "Ver el amanecer desde un lugar especial", "Visitar un vivero y escoger una planta", "Taller de jardinería", "Hacer una ruta de mariposas", "Ir a un parque natural cercano", "Acampar", "Dormir una noche en glamping", "Escalada", "Bouldering", "Tiro con arco", "Paintball", "Karting", "Trampolines", "Parque de aventura", "Canopy", "Canyoning", "Rafting", "Buceo en piscina", "Clase de defensa personal", "Boxeo recreativo", "Clase de pole dance", "Clase de heels", "Dancehall", "K-pop dance", "Reggaetón coreográfico", "Salsa caleña", "Swing", "Bachata sensual", "Danza africana", "Flamenco", "Danza contemporánea", "Clase de voguing", "Batalla de baile amateur", "Aprender una coreografía y grabarla", "Karaoke de canciones de infancia", "Karaoke de canciones que normalmente jamás cantarían", "Ir a un concierto de una banda desconocida", "Concierto de música clásica", "Jazz en vivo", "Blues en vivo", "Noche de música electrónica", "Noche de música latina", "Ir a una jam session", "Aprender percusión", "Clase de batería", "Clase de guitarra", "Clase de ukelele", "Taller de DJ", "Crear una canción entre todos", "Ruta de hamburguesas", "Ruta de pizza", "Ruta de cafés", "Ruta de postres", "Probar comida coreana", "Probar comida japonesa", "Probar comida mexicana", "Probar comida peruana", "Probar comida india", "Probar comida africana", "Ruta de comida callejera", "Probar cinco postres y calificarlos", "Competencia de hamburguesas", "Competencia de pizzas", "Desayuno a las 5–6 a. m.", "Cena de madrugada", "Ir a un restaurante sin mirar el menú antes", "Cada uno tiene $30.000 para alimentar al otro", "Elegir un país al azar y buscar un restaurante de ese país", "Hacerse preguntas que nunca se hayan hecho", "Cada una prepara una sorpresa para la otra", "Intercambiar playlists", "Hacer una playlist juntas", "Cada una escoge una película para la otra", "Hacer una noche de películas malas voluntariamente", "Cocinar juntas algo que ninguna sepa hacer", "Hacerse una sesión de fotos divertida", "Ir a comprar ropa con un presupuesto pequeño y escoger el outfit de la otra", "Ir a una tienda de segunda mano y elegir el outfit más extraño", "Cada una tiene $20.000 para comprarle algo a la otra", "Crear una cápsula del tiempo", "Escribir cartas para abrir dentro de un año", "Hacer una lista de 20 cosas que quieren hacer juntas", "Elegir tres cosas de esa lista y hacerlas durante el mes", "Hacer una noche de confesiones con preguntas preparadas", "Hacer un álbum de fotografías de sus experiencias", "Recrear una fotografía antigua", "Hacer un video documental de una salida", "Ir a una conferencia sobre un tema que ninguno conozca", "Asistir a una charla de divulgación científica", "Ir a un evento de networking", "Participar en un club de lectura abierto al público", "Participar en una jornada de voluntariado ambiental", "Participar en una jornada de voluntariado con animales", "Participar en una actividad de voluntariado comunitario", "Ir a un meetup tecnológico o de innovación", "Asistir a un conversatorio con artistas", "Ir a un cineforo y quedarse al debate posterior", "Participar en una visita guiada gratuita a un lugar histórico", "Asistir a una feria cultural de otro país o región", "Participar en un intercambio de idiomas", "Ir a una noche de juegos abierta donde no conozcan a los demás", "Participar en una clase grupal donde no conozcan a nadie", "Ir a una actividad de baile social", "Participar en una actividad de networking creativo", "Ir a un evento cultural comunitario y hablar con una persona nueva", "Hoy decide la moneda: cara = plan A, sello = plan B", "Ruleta gastronómica: elegir un restaurante al azar en el mapa", "$50.000 para dos: pasar toda la tarde con ese presupuesto", "Turistas: durante tres horas no pueden hacer nada habitual", "Sin plan: salir y decidir cada actividad al llegar a una esquina", "Pedir una recomendación a alguien de confianza sobre dónde comer", "Tres pistas: una persona prepara pistas que llevan a la actividad", "Intercambio: cada uno decide qué hará el otro", "La actividad que nadie quiere: elegir al azar algo que normalmente no harían", "Noche temática: todos deben vestirse según un tema", "Año equivocado: salir vestidos como si estuvieran en otra década", "Personaje: inventar un personaje y mantenerlo durante la actividad", "Fotografía: conseguir 10 fotos específicas durante la salida", "Bingo urbano: crear un bingo con situaciones de la ciudad", "Cambio de roles: una persona organiza la primera mitad y la otra la segunda", "Carta prohibida: una actividad que ninguno puede rechazar", "Invitado sorpresa: cada uno lleva a una persona que el otro no conozca", "Plan de $0: la salida completa debe ser gratuita", "Plan de $100.000: gastar exactamente $100.000 entre los dos", "Ir a una conferencia sobre un tema inesperado", "Ir a una feria de emprendimiento", "Asistir a un conversatorio de ciencia, arte o tecnología", "Participar en una jornada de limpieza de un parque", "Ir a un taller comunitario gratuito", "Participar en un intercambio de libros", "Conocer una organización cultural local", "Asistir a una charla de historia de Bogotá", "Ir a un evento de fotografía", "Participar en una actividad de lectura pública", "Ir a una feria de artesanías y hablar con un artesano", "Participar en una jornada de adopción responsable de animales", "Ir a un evento de idiomas y practicar con alguien nuevo", "Participar en un taller de habilidades para la vida", "Asistir a una charla sobre finanzas personales", "Ir a una conferencia de emprendimiento", "Participar en una actividad de ciencia ciudadana", "Asistir a una charla sobre astronomía", "Ir a una observación astronómica pública", "Participar en una actividad de intercambio cultural", "Taller de elaboración de cerveza artesanal", "Clase de barismo", "Taller de escritura creativa", "Noche de poesía", "Taller de magia para principiantes", "Visitar un planetario", "Visitar un museo de ciencias", "Aprender fotografía con celular", "Taller de edición de video", "Crear un mural colectivo", "Taller de cómics", "Visitar una tienda de vinilos", "Ruta de música en vivo", "Participar en una búsqueda del tesoro urbana", "Crear un mapa de lugares favoritos", "Intercambiar recomendaciones de libros", "Visitar una casa cultural", "Participar en una tertulia", "Taller de reciclaje creativo", "Participar en una jornada de reforestación", "Visitar un centro cultural nuevo", "Ir a una feria de segunda mano", "Participar en una feria de emprendimientos locales", "Taller de cocina comunitaria", "Asistir a un debate público", "Visitar una galería independiente", "Participar en una actividad de ciencia para público general", "Conocer un grupo local de senderismo", "Asistir a una charla sobre inteligencia artificial", "Participar en una actividad de integración comunitaria", "Conocer una asociación cultural del barrio", "Aprender un truco de magia", "Clase de cocina vegetariana", "Ruta de panaderías", "Clase de primeros auxilios", "Visita a una estación de radio", "Asistir a una grabación de podcast", "Taller de origami modular", "Clase de cerámica en pareja", "Intercambiar una recomendación de película con alguien nuevo", "Participar en un club de conversación", "Visitar una exposición fotográfica", "Taller de pintura al aire libre", "Participar en una caminata histórica", "Visitar un mercado campesino", "Hacer una ruta de heladerías", "Probar un desayuno típico de otra región", "Hacer una ruta de librerías usadas", "Participar en una actividad de trueque", "Aprender un baile tradicional colombiano", "Taller de cocina de una región de Colombia", "Asistir a una charla de astronomía para principiantes", "Observar aves en un parque", "Participar en una jornada de recuperación de un espacio público", "Ir a una feria de diseño independiente", "Participar en un taller de habilidades digitales", "Asistir a una charla de historia local", "Conocer un colectivo artístico", "Hacer un intercambio de plantas", "Aprender a hacer origami modular", "Taller de acuarela", "Taller de estampación", "Clase de cerámica pintada", "Visitar una exposición de diseño", "Participar en una noche de preguntas y respuestas", "Asistir a una conferencia universitaria", "Participar en una actividad de networking profesional", "Ir a un encuentro de emprendedores", "Participar en un taller de innovación", "Visitar un espacio de coworking en un evento abierto", "Asistir a una charla sobre futuro y tecnología", "Participar en un club de conversación sobre películas", "Asistir a una charla de psicología divulgativa", "Experiencia sorpresa #315", "Experiencia sorpresa #316", "Experiencia sorpresa #317", "Experiencia sorpresa #318", "Experiencia sorpresa #319", "Experiencia sorpresa #320"];
+
+const key="caja_experiencias_realizadas_v2_320";
+let doneSet = new Set(JSON.parse(localStorage.getItem(key)||"[]"));
+let current = [];
+
+const $ = id => document.getElementById(id);
+
+function save(){ localStorage.setItem(key, JSON.stringify([...doneSet])); }
+function update(){
+  $("available").textContent = activities.length-doneSet.size;
+  $("done").textContent = doneSet.size;
+  $("total").textContent = activities.length;
+  const list=[...doneSet].map(i=>activities[i]).sort();
+  $("doneList").innerHTML=list.length ? list.map((x,n)=>`<div class="done-item"><span>${x}</span><button class="secondary" onclick="undo(${activities.indexOf(x)})">↩️ Desmarcar</button></div>`).join("") : '<div class="empty">Aún no han realizado actividades.</div>';
+}
+function draw(){
+  const available=activities.map((x,i)=>i).filter(i=>!doneSet.has(i));
+  if(available.length===0){ $("choices").innerHTML='<div class="empty">🎉 ¡Han completado todas las actividades!</div>'; $("actions").style.display="none"; return; }
+  const pool=[...available];
+  current=[];
+  while(current.length<Math.min(3,pool.length)){
+    const p=Math.floor(Math.random()*pool.length);
+    current.push(pool.splice(p,1)[0]);
+  }
+  render();
+}
+function render(){
+  $("choices").innerHTML=current.map((i,n)=>`
+    <div class="choice" data-i="${i}" onclick="selectChoice(${i})">
+      <div class="cat">Opción ${n+1}</div>
+      <div class="activity">${activities[i]}</div>
+      <div class="hint">Haz clic aquí para elegirla.</div>
+    </div>`).join("");
+  $("actions").style.display="flex";
+}
+function selectChoice(i){
+  document.querySelectorAll(".choice").forEach(c=>c.classList.remove("selected"));
+  const el=document.querySelector(`.choice[data-i="${i}"]`);
+  if(el) el.classList.add("selected");
+  current.selected=i;
+}
+function keep(){
+  if(typeof current.selected!=="number"){ alert("Primero selecciona una de las tres actividades."); return; }
+  doneSet.add(current.selected); save(); current=[]; $("choices").innerHTML=`<div class="empty">🎉 ¡Excelente!<br><strong>${activities[[...doneSet].at(-1)]}</strong><br>queda marcada como realizada.</div>`; $("actions").style.display="none"; update();
+}
+function undo(i){ if(i>=0){ doneSet.delete(i); save(); update(); } }
+$("drawBtn").onclick=draw;
+$("redrawBtn").onclick=draw;
+$("keepBtn").onclick=keep;
+$("resetBtn").onclick=()=>{ if(confirm("¿Reiniciar todas las actividades realizadas?")){ doneSet.clear(); save(); current=[]; $("choices").innerHTML=""; $("actions").style.display="none"; update(); }};
+$("allBtn").onclick=()=>{
+  const box=$("allList");
+  if(box.style.display==="none"){
+    box.style.display="block";
+    box.innerHTML=activities.map((x,i)=>`<div class="done-item"><span><strong>${i+1}.</strong> ${x}</span><span>${doneSet.has(i)?"✅":""}</span></div>`).join("");
+    $("allBtn").textContent="🙈 Ocultar actividades";
+  } else {
+    box.style.display="none";
+    $("allBtn").textContent="📋 Ver las 320 actividades";
+  }
+};
+update();
+</script>
+</body>
+</html>
